@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Everstead">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f2744">
+<title>Everstead Field Counter</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Everstead Field Counter&quot;,&quot;short_name&quot;:&quot;Everstead&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#0f2744&quot;,&quot;theme_color&quot;:&quot;#0f2744&quot;}">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+:root{
+  --navy:#0f2744;--navy-mid:#1a3a5c;--navy-light:#234876;
+  --navy-pale:#dce6f0;--navy-faint:#f0f4f8;
+  --white:#ffffff;
+  --text-primary:#0f2744;--text-secondary:#4a6380;--text-muted:#8da0b5;
+  --border:rgba(15,39,68,0.1);--border-mid:rgba(15,39,68,0.18);
+  --green-bg:#e6f4ec;--green-fg:#1a6b3a;--green-flash:#a8d9bc;
+  --red-bg:#faeaea;--red-fg:#a32020;--red-flash:#f0b8b8;
+  --radius:14px;--radius-sm:8px;--radius-pill:100px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{height:100%;overflow-x:hidden;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--navy-faint);color:var(--text-primary);}
+#app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;}
+.screen{display:none;}
+.screen.active{display:block;padding-bottom:80px;}
+
+/* TOPBAR */
+.topbar{background:var(--navy);padding:10px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;min-height:64px;}
+.brand-text{display:flex;flex-direction:column;justify-content:center;flex:1;}
+.brand-name-top{font-size:15px;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase;line-height:1.1;}
+.brand-name-sub{font-size:9px;font-weight:500;color:rgba(255,255,255,0.55);letter-spacing:0.2em;text-transform:uppercase;margin-top:2px;}
+.back-btn{background:rgba(255,255,255,0.1);border:none;border-radius:var(--radius-sm);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--white);font-size:22px;flex-shrink:0;}
+.back-btn:active{background:rgba(255,255,255,0.22);}
+.topbar-title{font-size:14px;font-weight:500;color:var(--white);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rename-topbar-btn{background:rgba(255,255,255,0.12);border:none;border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.9);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rename-topbar-btn:active{background:rgba(255,255,255,0.22);}
+
+/* SECTION */
+.section-pad{padding:18px 16px;}
+.page-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;}
+.plus-circle{width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;flex-shrink:0;}
+
+/* ADD PROJECT */
+.add-project-btn{width:100%;background:var(--white);border:1.5px dashed var(--border-mid);border-radius:var(--radius);padding:20px;font-size:15px;font-weight:500;color:var(--navy-light);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;font-family:inherit;}
+.add-project-btn:active{background:var(--navy-faint);}
+
+/* PROJECT CARD */
+.project-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;}
+.project-card:active{background:var(--navy-faint);}
+.proj-dot{width:9px;height:9px;border-radius:50%;background:var(--navy-light);flex-shrink:0;margin-right:14px;}
+.project-card-body{flex:1;min-width:0;}
+.project-card-name{font-size:15px;font-weight:600;color:var(--text-primary);}
+.project-card-meta{font-size:12px;color:var(--text-muted);margin-top:3px;}
+.chevron{color:var(--text-muted);font-size:20px;margin-left:10px;}
+.chip-del{background:var(--red-bg);border:1px solid var(--red-flash);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;color:var(--red-fg);font-family:inherit;margin-left:8px;}
+.chip-del:active{background:var(--red-flash);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:52px 24px;color:var(--text-muted);}
+.empty-icon{width:58px;height:58px;border-radius:16px;background:var(--navy-pale);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;}
+.empty-state p{font-size:14px;line-height:1.8;}
+.empty-state strong{color:var(--text-secondary);}
+
+/* ITEM CARD */
+.item-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;transition:border-color 0.2s;}
+.item-card.expanded{border-color:var(--navy-light);}
+.item-tapper{display:flex;align-items:stretch;min-height:100px;position:relative;}
+.tap-half{flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:100px;transition:background 0.08s;-webkit-tap-highlight-color:transparent;}
+.tap-half-minus{border-right:1px solid var(--border);}
+.tap-symbol{font-size:44px;font-weight:200;line-height:1;pointer-events:none;}
+.tap-half-minus .tap-symbol{color:var(--red-fg);opacity:0.65;}
+.tap-half-plus .tap-symbol{color:var(--green-fg);opacity:0.65;}
+.tap-half-minus:active{background:var(--red-bg);}
+.tap-half-plus:active{background:var(--green-bg);}
+.flash-green{animation:fG 0.32s ease forwards;}
+.flash-red{animation:fR 0.32s ease forwards;}
+@keyframes fG{0%{background:var(--green-flash)}100%{background:var(--white)}}
+@keyframes fR{0%{background:var(--red-flash)}100%{background:var(--white)}}
+
+/* CENTER PILL */
+.item-center-pill{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--white);border:1.5px solid var(--border-mid);border-radius:var(--radius-pill);padding:8px 22px;display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;min-width:98px;max-width:140px;cursor:pointer;box-shadow:0 1px 8px rgba(15,39,68,0.1);transition:border-color 0.15s,background 0.15s;}
+.item-center-pill:active{background:var(--navy-faint);}
+.item-card.expanded .item-center-pill{border-color:var(--navy-light);background:var(--navy-faint);}
+.item-label{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.item-count{font-size:36px;font-weight:600;color:var(--navy);line-height:1;}
+.count-pop{animation:pop 0.18s ease;}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* ITEM ACTIONS */
+.item-actions{max-height:0;overflow:hidden;transition:max-height 0.25s ease;}
+.item-card.expanded .item-actions{max-height:80px;border-top:1px solid var(--border);}
+.item-actions-inner{display:flex;gap:8px;padding:10px 14px;background:var(--navy-faint);}
+.action-btn{flex:1;border-radius:var(--radius-sm);padding:11px 8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:1px solid var(--border-mid);background:var(--white);color:var(--navy);}
+.action-btn:active{background:var(--navy-pale);}
+.action-btn-del{background:var(--red-bg);border-color:var(--red-flash);color:var(--red-fg);}
+.action-btn-del:active{background:var(--red-flash);}
+
+/* ADD ITEM */
+.add-item-btn{width:100%;background:var(--white);border:1.5px dashed var(--border-mid);border-radius:var(--radius);padding:17px;font-size:15px;font-weight:500;color:var(--navy-light);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px;font-family:inherit;}
+.add-item-btn:active{background:var(--navy-faint);}
+
+/* EXPORT BAR */
+.export-bar{background:var(--white);border-top:1px solid var(--border);padding:12px 16px;position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;z-index:10;}
+.export-main-btn{width:100%;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius-sm);padding:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;}
+.export-main-btn:active{background:var(--navy-mid);transform:scale(0.99);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,25,45,0.6);z-index:100;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:22px 22px 0 0;padding:24px 20px 44px;width:100%;max-width:480px;}
+.modal-handle{width:40px;height:4px;background:var(--navy-pale);border-radius:2px;margin:0 auto 20px;}
+.modal h3{font-size:18px;font-weight:600;margin-bottom:4px;color:var(--navy);}
+.modal-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:20px;}
+.modal input{width:100%;padding:14px 16px;font-size:16px;border:1.5px solid var(--border-mid);border-radius:var(--radius-sm);background:var(--navy-faint);color:var(--navy);margin-bottom:12px;font-family:inherit;-webkit-appearance:none;}
+.modal input:focus{outline:none;border-color:var(--navy);background:var(--white);}
+
+/* SUGGESTIONS */
+.suggestion-label{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.suggestion-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;}
+.suggestion-chip{background:var(--navy-faint);border:1px solid var(--border-mid);border-radius:var(--radius-pill);padding:8px 15px;font-size:13px;font-weight:500;color:var(--navy-light);cursor:pointer;font-family:inherit;}
+.suggestion-chip:active{background:var(--navy-pale);border-color:var(--navy);}
+
+/* MODAL ACTIONS */
+.modal-actions{display:flex;gap:10px;margin-top:4px;}
+.modal-cancel{flex:1;padding:14px;border:1px solid var(--border-mid);border-radius:var(--radius-sm);background:var(--navy-faint);font-size:15px;cursor:pointer;color:var(--text-secondary);font-family:inherit;font-weight:500;}
+.modal-ok{flex:2;padding:14px;border:none;border-radius:var(--radius-sm);background:var(--navy);color:var(--white);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+.modal-ok:active{background:var(--navy-mid);}
+
+/* EXPORT OPTIONS */
+.export-option{display:flex;align-items:center;gap:16px;padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--white);cursor:pointer;margin-bottom:10px;}
+.export-option:active{background:var(--navy-faint);border-color:var(--navy-pale);}
+.export-option:last-child{margin-bottom:0;}
+.export-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.export-icon-sms{background:#e6f4ec;}
+.export-icon-copy{background:#f0f4f8;}
+.export-icon-pdf{background:#e8eef5;}
+.export-option-text{flex:1;}
+.export-option-title{font-size:15px;font-weight:600;color:var(--navy);}
+.export-option-desc{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.export-option-arrow{color:var(--text-muted);font-size:20px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--navy);color:var(--white);padding:12px 24px;border-radius:var(--radius-pill);font-size:14px;font-weight:500;opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;white-space:nowrap;z-index:300;font-family:inherit;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* INSTALL BANNER */
+.install-banner{background:var(--navy-mid);color:var(--white);padding:10px 16px;display:flex;align-items:center;gap:10px;font-size:13px;}
+.install-banner button{background:rgba(255,255,255,0.2);border:none;border-radius:6px;padding:5px 12px;color:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.install-banner-close{background:none;border:none;color:rgba(255,255,255,0.6);font-size:18px;cursor:pointer;padding:0 4px;margin-left:auto;}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <div class="topbar">
+      <svg width="34" height="42" viewBox="0 0 34 42" fill="none" style="flex-shrink:0">
+        <path d="M17 1.5C9.82 1.5 4 7.32 4 14.5c0 4.8 2.5 9.02 6.26 11.44L10.5 27v2.5h13V27l0.24-1.06C27.5 23.52 30 19.3 30 14.5 30 7.32 24.18 1.5 17 1.5z" stroke="white" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+        <path d="M17 8.5L10.5 14.5H12.5V20H15.5V17H18.5V20H21.5V14.5H23.5Z" fill="white"/>
+        <rect x="15.2" y="12.2" width="2" height="2" rx="0.4" fill="rgba(255,255,255,0.45)"/>
+        <line x1="10.5" y1="29.5" x2="23.5" y2="29.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="12.5" y1="32.5" x2="21.5" y2="32.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="14.5" y1="35.5" x2="19.5" y2="35.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <rect x="14.5" y="36.5" width="5" height="3.5" rx="1.75" fill="white"/>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-name-top">Everstead</div>
+        <div class="brand-name-sub">Innovations</div>
+      </div>
+    </div>
+    <div id="install-banner-slot"></div>
+    <div class="section-pad">
+      <div class="page-label">Projects</div>
+      <button class="add-project-btn" onclick="openModal('project')"><div class="plus-circle">+</div> New Project</button>
+      <div id="project-list"></div>
+    </div>
+  </div>
+
+  <!-- PROJECT -->
+  <div id="screen-project" class="screen">
+    <div class="topbar">
+      <button class="back-btn" onclick="goHome()">&#8592;</button>
+      <span class="topbar-title" id="proj-title"></span>
+      <button class="rename-topbar-btn" onclick="openModal('rename-project')">Rename</button>
+    </div>
+    <div class="section-pad">
+      <div class="page-label">Items</div>
+      <div id="items-list"></div>
+    </div>
+    <div class="export-bar">
+      <button class="export-main-btn" onclick="openModal('export')">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export Project
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-body">
+    <div class="modal-handle"></div>
+    <h3 id="modal-title"></h3>
+    <div class="modal-subtitle" id="modal-subtitle"></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+var projects=[], currentPid=null, modalMode='', editItemId=null, expandedItemId=null;
+
+var KNOWLEDGE={
+  window:['Single hung window','Double hung window','Casement window','Fixed pane window','Sliding window','Bay window','Egress window','Storm window','Window screen','Window lock','Window latch','Transom window','Picture window','Awning window','Skylight'],
+  door:['Exterior door','Interior door','Pocket door','Sliding door','French door','Bifold door','Storm door','Screen door','Closet door','Barn door','Fire door','Door knob','Dead bolt','Door hinge','Door sweep','Door threshold','Prehung door'],
+  outlet:['Single gang outlet','Double gang outlet','Triple gang outlet','GFCI outlet','USB outlet','220V outlet','Decorator outlet','Blank cover plate','Weatherproof outlet','Floor outlet'],
+  switch:['Single gang switch','Double gang switch','Triple gang switch','3-way switch','4-way switch','Dimmer switch','Rocker switch','Toggle switch','Smart switch','Timer switch','Motion sensor switch','Ceiling fan switch'],
+  cover:['Single gang cover','Double gang cover','Triple gang cover','Blank cover plate','Decorator cover','GFCI cover','Switch cover','Outlet cover','Weatherproof cover','Floor box cover'],
+  electrical:['Single gang outlet','Double gang outlet','GFCI outlet','Single gang switch','Double gang switch','Dimmer switch','3-way switch','Blank cover plate','USB outlet','Ceiling fan switch','Junction box','Panel breaker','Recessed light','Under-cabinet light','Exhaust fan'],
+  plumbing:['Shut-off valve','Ball valve','P-trap','Drain assembly','Supply line','Toilet flapper','Fill valve','Wax ring','Sink strainer','Faucet aerator','Showerhead','Tub spout','Pressure relief valve','Clean-out plug','Gate valve','Check valve'],
+  roof:['Roof shingle','Ridge cap shingle','Hip cap shingle','Starter strip','Drip edge','Ice and water shield','Ridge vent','Roof vent','Pipe boot','Step flashing','Valley flashing','Skylight','Fascia board','Soffit panel','Gutter section','Gutter end cap','Downspout','Downspout elbow'],
+  flooring:['Hardwood plank','LVP plank','Ceramic tile','Grout bag','Transition strip','Reducer strip','T-molding','End cap','Threshold','Underlayment roll','Floor vent','Baseboard','Quarter round','Shoe molding'],
+  drywall:['Drywall sheet','Corner bead','J-bead','L-bead','Drywall screw box','Joint compound bucket','Drywall tape roll','Access panel','Drywall anchor'],
+  cabinet:['Base cabinet','Wall cabinet','Tall cabinet','Drawer base','Sink base','Corner base','Corner wall cabinet','Drawer','Cabinet door','Cabinet hinge','Drawer slide','Cabinet knob','Cabinet pull','Lazy Susan','Pull-out shelf','Toe kick','Filler panel'],
+  trim:['Door casing','Window casing','Baseboard','Crown molding','Chair rail','Picture rail','Wainscoting panel','Corner block','Rosette block','Shoe molding','Quarter round','Cove molding'],
+  hvac:['Supply vent','Return air vent','Floor register','Ceiling diffuser','Thermostat','Air filter','Damper','Flex duct section','Hard duct section','Elbow fitting','Reducer fitting','Condensate drain pan','Float switch'],
+  bathroom:['Toilet','Vanity','Sink','Faucet','Showerhead','Tub spout','Towel bar','Towel ring','Toilet paper holder','Mirror','Medicine cabinet','Exhaust fan','GFCI outlet','Vanity light','Shower door','Tub surround panel','Grab bar'],
+  kitchen:['Upper cabinet','Base cabinet','Drawer base','Sink base','Island cabinet','Pantry cabinet','Drawer','Cabinet door','Cabinet pull','Under-cabinet outlet','GFCI outlet','Hood vent','Dishwasher outlet','Disposal switch','Recessed light'],
+  lighting:['Recessed light','Recessed light trim','Pendant light','Vanity light','Under-cabinet light','Ceiling fan','Exhaust fan light','Track light head','Motion sensor light','Step light','Flood light','Porch light'],
+  insulation:['Batt insulation','Blown-in insulation bag','Rigid foam panel','Vapor barrier roll','Spray foam can','Outlet insulator','Switch insulator','Band joist insulator'],
+  siding:['Lap siding board','Panel siding','Shake siding','Corner trim','J-channel','F-channel','Starter strip','Soffit panel','Fascia board','Drip cap','Window wrap','Door wrap','Vent cover'],
+  fence:['Fence panel','Fence post','Post cap','Gate','Gate latch','Gate hinge','Picket','Top rail','Bottom rail','Fence bracket','Post anchor'],
+  concrete:['Concrete bag','Rebar section','Rebar tie','Anchor bolt','J-bolt','Expansion joint','Control joint','Wire mesh panel'],
+  paint:['Gallon of paint','Primer gallon','Paint roller','Roller cover','Paint brush','Painter tape roll','Drop cloth','Paint tray'],
+  tile:['Floor tile','Wall tile','Mosaic tile sheet','Grout bag','Thinset bag','Tile spacer bag','Bullnose tile','Trim tile','Schluter strip','Backer board sheet'],
+  fireplace:['Firebox','Damper','Flue liner section','Chimney cap','Spark arrestor','Mantel','Surround panel','Hearth tile','Gas log set','Gas valve'],
+  garage:['Garage door panel','Garage door spring','Garage door roller','Bottom seal','Weather seal','Safety cable','Garage door opener','Wall button','Keypad'],
+  deck:['Deck board','Joist','Ledger board','Post','Beam','Joist hanger','Post anchor','Deck screw box','Railing post','Top rail','Baluster','Newel post','Stair tread','Riser','Stringer'],
+  stair:['Stair tread','Riser','Stringer','Newel post','Baluster','Handrail','Handrail bracket','Nosing','Landing tread','Stair angle bracket']
+};
+
+var KEYWORDS={
+  window:['window','windows','glazing','casement','pane','sash','glass'],
+  door:['door','doors','entry','entryway','passage','closet'],
+  outlet:['outlet','outlets','receptacle','plug','cover plate'],
+  switch:['switch','switches','dimmer','rocker','toggle'],
+  cover:['cover','cover plate','plate','gang'],
+  electrical:['electrical','electric','wiring','wire','breaker','panel','circuit'],
+  plumbing:['plumb','plumbing','pipe','water','drain','sewer','fixture'],
+  roof:['roof','roofing','shingle','gutter','soffit','fascia','flashing','ridge'],
+  flooring:['floor','flooring','hardwood','lvp','vinyl','laminate','carpet'],
+  drywall:['drywall','sheetrock','gypsum','mud','tape'],
+  cabinet:['cabinet','cabinets','cabinetry','casework','drawer'],
+  trim:['trim','casing','molding','baseboard','crown','wainscot'],
+  hvac:['hvac','heat','ac','air condition','duct','vent','register','thermostat','furnace'],
+  bathroom:['bathroom','bath','restroom','toilet','shower','tub','vanity','lavatory','powder room'],
+  kitchen:['kitchen','kitchenette','galley'],
+  lighting:['light','lighting','fixture','lamp','recessed','pendant'],
+  insulation:['insulation','insulate','vapor barrier','thermal'],
+  siding:['siding','exterior','cladding','hardie'],
+  fence:['fence','fencing','gate','picket','privacy'],
+  concrete:['concrete','cement','slab','footing','foundation'],
+  paint:['paint','painting','primer','coat','finish'],
+  tile:['tile','tiling','ceramic','porcelain','mosaic','grout','backsplash'],
+  fireplace:['fireplace','chimney','hearth','mantel','flue','firebox'],
+  garage:['garage','car','parking','bay'],
+  deck:['deck','decking','patio','composite deck'],
+  stair:['stair','stairs','staircase','stairway','step','steps','riser','tread']
+};
+
+function getSuggestions(projectName,existingItems){
+  if(!projectName.trim()&&existingItems.length===0)return[];
+  var text=[projectName].concat(existingItems.map(function(i){return i.name;})).join(' ').toLowerCase();
+  var matched={};
+  Object.keys(KEYWORDS).forEach(function(cat){
+    if(KEYWORDS[cat].some(function(k){return text.indexOf(k)!==-1;}))matched[cat]=true;
+  });
+  var cats=Object.keys(matched);
+  if(!cats.length)return[];
+  var existingLower={};
+  existingItems.forEach(function(i){existingLower[i.name.toLowerCase()]=true;});
+  var pool=[],seen={};
+  cats.forEach(function(cat){
+    (KNOWLEDGE[cat]||[]).forEach(function(item){
+      var k=item.toLowerCase();
+      if(!seen[k]&&!existingLower[k]){pool.push(item);seen[k]=true;}
+    });
+  });
+  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;}
+  return pool.slice(0,6);
+}
+
+function buildExportText(p){
+  var date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  var txt='Everstead Innovations\n'+p.name+' \u2014 '+date+'\n';
+  txt+='\u2500'.repeat(30)+'\n';
+  if(!p.items.length){txt+='(no items)\n';}
+  else{
+    p.items.forEach(function(i){txt+=i.name+': '+i.count+'\n';});
+    txt+='\u2500'.repeat(30)+'\n';
+    var total=p.items.reduce(function(s,i){return s+i.count;},0);
+    txt+='Total: '+total+' across '+p.items.length+' item'+(p.items.length!==1?'s':'')
+  }
+  return txt;
+}
+
+function save(){try{localStorage.setItem('ei_final',JSON.stringify(projects));}catch(e){}}
+function load(){try{var d=localStorage.getItem('ei_final');if(d)projects=JSON.parse(d);}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2400);}
+function dismissKeyboard(){if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}
+
+function goHome(){
+  document.getElementById('screen-project').classList.remove('active');
+  document.getElementById('screen-home').classList.add('active');
+  expandedItemId=null;renderHome();
+  window.scrollTo(0,0);
+}
+function openProject(id){
+  currentPid=id;expandedItemId=null;
+  document.getElementById('screen-home').classList.remove('active');
+  document.getElementById('screen-project').classList.add('active');
+  renderProject();window.scrollTo(0,0);
+}
+
+function renderHome(){
+  var list=document.getElementById('project-list');
+  var sorted=projects.slice().sort(function(a,b){return b.createdAt-a.createdAt;});
+  if(!sorted.length){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 2C8.48 2 4 6.48 4 12c0 3.6 1.87 6.77 4.7 8.62L9 22v2h10v-2l0.3-.38C22.13 18.77 24 15.6 24 12 24 6.48 19.52 2 14 2z" stroke="#0f2744" stroke-width="1.4" fill="none" opacity="0.3"/><line x1="9" y1="24" x2="19" y2="24" stroke="#0f2744" stroke-width="1.4" stroke-linecap="round" opacity="0.3"/><line x1="11" y1="26.5" x2="17" y2="26.5" stroke="#0f2744" stroke-width="1.4" stroke-linecap="round" opacity="0.3"/></svg></div><p>No projects yet.<br><strong>Tap New Project to begin.</strong></p></div>';
+    return;
+  }
+  list.innerHTML=sorted.map(function(p){
+    var total=p.items.reduce(function(s,i){return s+i.count;},0);
+    var date=new Date(p.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div class="project-card" onclick="openProject(\''+ p.id +'\')"><div class="proj-dot"></div><div class="project-card-body"><div class="project-card-name">'+esc(p.name)+'</div><div class="project-card-meta">'+ p.items.length +' item'+(p.items.length!==1?'s':'')+ ' &middot; '+ total +' counted &middot; '+ date +'</div></div><div onclick="event.stopPropagation()"><button class="chip-del" onclick="deleteProject(\''+ p.id +'\')">Delete</button></div><span class="chevron">&#8250;</span></div>';
+  }).join('');
+}
+
+function deleteProject(id){
+  if(!confirm('Delete this project? This cannot be undone.'))return;
+  projects=projects.filter(function(p){return p.id!==id;});
+  save();renderHome();
+}
+
+function renderProject(){
+  var p=projects.find(function(x){return x.id===currentPid;});
+  if(!p)return;
+  document.getElementById('proj-title').textContent=p.name;
+  var list=document.getElementById('items-list');
+  var html='';
+  if(!p.items.length){
+    html='<div class="empty-state"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 5v18M5 14h18" stroke="#0f2744" stroke-width="2.2" stroke-linecap="round" opacity="0.3"/></svg></div><p>No items yet.<br><strong>Tap Add Item below.</strong></p></div>';
+  }else{
+    html=p.items.map(function(item){
+      var isExp=expandedItemId===item.id;
+      return '<div class="item-card'+(isExp?' expanded':'')+'" id="card-'+item.id+'"><div class="item-tapper"><div class="tap-half tap-half-minus" ontouchstart="doTap(\''+ item.id +'\',\'minus\',event)" onclick="doTap(\''+ item.id +'\',\'minus\',event)"><span class="tap-symbol">&#8722;</span></div><div class="item-center-pill" onclick="toggleExpand(\''+ item.id +'\')"><span class="item-label">'+ esc(item.name) +'</span><span class="item-count" id="cnt-'+ item.id +'">'+ item.count +'</span></div><div class="tap-half tap-half-plus" ontouchstart="doTap(\''+ item.id +'\',\'plus\',event)" onclick="doTap(\''+ item.id +'\',\'plus\',event)"><span class="tap-symbol">+</span></div></div><div class="item-actions"><div class="item-actions-inner"><button class="action-btn" onclick="openModal(\'rename-item\',\''+ item.id +'\')">Rename</button><button class="action-btn action-btn-del" onclick="confirmDeleteItem(\''+ item.id +'\')">Delete</button></div></div></div>';
+    }).join('');
+  }
+  html+='<button class="add-item-btn" onclick="openModal(\'item\')"><div class="plus-circle">+</div> Add Item</button>';
+  list.innerHTML=html;
+}
+
+function toggleExpand(id){expandedItemId=(expandedItemId===id)?null:id;renderProject();}
+
+function confirmDeleteItem(id){
+  var p=projects.find(function(x){return x.id===currentPid;});
+  var item=p&&p.items.find(function(i){return i.id===id;});
+  if(!item)return;
+  if(!confirm('Delete "'+ item.name +'"?'))return;
+  deleteItem(id);
+}
+function deleteItem(id){
+  var p=projects.find(function(x){return x.id===currentPid;});
+  p.items=p.items.filter(function(i){return i.id!==id;});
+  if(expandedItemId===id)expandedItemId=null;
+  save();renderProject();
+}
+
+var _lt={};
+function doTap(id,side,e){
+  if(e){e.preventDefault();e.stopPropagation();}
+  var key=id+side,now=Date.now();
+  if(now-(_lt[key]||0)<250)return;_lt[key]=now;
+  var p=projects.find(function(x){return x.id===currentPid;});
+  var item=p&&p.items.find(function(i){return i.id===id;});
+  if(!item)return;
+  if(side==='plus'){item.count++;}else{if(item.count<=0)return;item.count--;}
+  save();
+  var cEl=document.getElementById('cnt-'+id),card=document.getElementById('card-'+id);
+  cEl.textContent=item.count;
+  cEl.classList.remove('count-pop');card.classList.remove('flash-green','flash-red');
+  void cEl.offsetWidth;
+  cEl.classList.add('count-pop');card.classList.add(side==='plus'?'flash-green':'flash-red');
+  setTimeout(function(){card.classList.remove('flash-green','flash-red');},340);
+}
+
+function openModal(mode,iid){
+  modalMode=mode;editItemId=iid||null;
+  var titles={project:'New project',item:'New item','rename-project':'Rename project','rename-item':'Rename item',export:'Export project'};
+  document.getElementById('modal-title').textContent=titles[mode]||'Enter name';
+  var subtitleEl=document.getElementById('modal-subtitle');
+  var content=document.getElementById('modal-content');
+  subtitleEl.textContent='';content.innerHTML='';
+
+  if(mode==='export'){
+    var p=projects.find(function(x){return x.id===currentPid;});
+    subtitleEl.textContent=p?p.name:'';
+    content.innerHTML='<div class="export-option" onclick="doExportSMS()"><div class="export-icon export-icon-sms"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="#1a6b3a" stroke-width="1.7"/><path d="M7 18.5l2.5-3.5" stroke="#1a6b3a" stroke-width="1.7" stroke-linecap="round"/><path d="M7 11h10M7 14h6" stroke="#1a6b3a" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="export-option-text"><div class="export-option-title">Send as Text Message</div><div class="export-option-desc">Opens Messages with your list pre-filled</div></div><span class="export-option-arrow">&#8250;</span></div><div class="export-option" onclick="doExportCopy()"><div class="export-icon export-icon-copy"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="8" y="3" width="13" height="16" rx="2" stroke="#4a6380" stroke-width="1.7"/><rect x="3" y="7" width="13" height="16" rx="2" stroke="#4a6380" stroke-width="1.7" fill="white"/><path d="M6 12h7M6 15h5" stroke="#4a6380" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="export-option-text"><div class="export-option-title">Copy to Clipboard</div><div class="export-option-desc">Paste into email, WhatsApp, Slack or Notes</div></div><span class="export-option-arrow">&#8250;</span></div><div class="export-option" onclick="doExportPDF()"><div class="export-icon export-icon-pdf"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#0c447c" stroke-width="1.7" fill="none"/><path d="M14 2v6h6" stroke="#0c447c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13h8M8 17h5" stroke="#0c447c" stroke-width="1.4" stroke-linecap="round"/></svg></div><div class="export-option-text"><div class="export-option-title">Download PDF Report</div><div class="export-option-desc">Branded Everstead report — save or share</div></div><span class="export-option-arrow">&#8250;</span></div>';
+    document.getElementById('modal-overlay').classList.add('open');
+    return;
+  }
+
+  var sugHtml='';
+  if(mode==='item'||mode==='rename-item'){
+    var proj=projects.find(function(x){return x.id===currentPid;});
+    var forSug=mode==='rename-item'?proj.items.filter(function(i){return i.id!==iid;}):proj.items;
+    var sugs=getSuggestions(proj?proj.name:'',forSug);
+    if(sugs.length){
+      sugHtml='<div class="suggestion-label">Suggestions</div><div class="suggestion-row">'+ sugs.map(function(s){return'<button class="suggestion-chip" onclick="fillSuggestion(\''+ esc(s) +'\')">'+ esc(s) +'</button>';}).join('') +'</div>';
+    }
+  }
+
+  var initVal='', ph='Type name...';
+  if(mode==='rename-project'){var rp=projects.find(function(x){return x.id===currentPid;});initVal=rp?rp.name:'';ph='Project name';}
+  else if(mode==='rename-item'){var rproj=projects.find(function(x){return x.id===currentPid;});var rit=rproj&&rproj.items.find(function(i){return i.id===iid;});initVal=rit?rit.name:'';ph='Item name';}
+  else if(mode==='project'){ph='e.g. 123 Main St Renovation';}
+  else if(mode==='item'){ph='Type item name...';}
+
+  content.innerHTML='<input type="text" id="modal-input" placeholder="'+ ph +'" maxlength="60" value="'+ esc(initVal) +'">'+ sugHtml +'<div class="modal-actions"><button class="modal-cancel" onclick="closeModal()">Cancel</button><button class="modal-ok" onclick="confirmModal()">Save</button></div>';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(function(){
+    var inp=document.getElementById('modal-input');
+    if(inp){inp.focus();if(initVal)inp.setSelectionRange(initVal.length,initVal.length);}
+  },80);
+}
+
+function fillSuggestion(val){var inp=document.getElementById('modal-input');if(inp){inp.value=val;inp.focus();}}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');dismissKeyboard();}
+
+function confirmModal(){
+  dismissKeyboard();
+  var inp=document.getElementById('modal-input');
+  var val=inp?inp.value.trim():'';
+  if(!val){if(inp)inp.focus();return;}
+  if(modalMode==='project'){
+    var p={id:uid(),name:val,createdAt:Date.now(),items:[]};
+    projects.unshift(p);save();closeModal();openProject(p.id);
+  }else if(modalMode==='item'){
+    var pr=projects.find(function(x){return x.id===currentPid;});
+    pr.items.push({id:uid(),name:val,count:0});save();closeModal();renderProject();
+  }else if(modalMode==='rename-project'){
+    var rp=projects.find(function(x){return x.id===currentPid;});
+    rp.name=val;save();closeModal();renderProject();
+  }else if(modalMode==='rename-item'){
+    var rpr=projects.find(function(x){return x.id===currentPid;});
+    var it=rpr.items.find(function(i){return i.id===editItemId;});
+    it.name=val;save();closeModal();expandedItemId=null;renderProject();
+  }
+}
+
+function doExportSMS(){
+  var p=projects.find(function(x){return x.id===currentPid;});if(!p)return;
+  var txt=buildExportText(p);
+  closeModal();
+  setTimeout(function(){window.location.href='sms:?&body='+encodeURIComponent(txt);},200);
+}
+
+function doExportCopy(){
+  var p=projects.find(function(x){return x.id===currentPid;});if(!p)return;
+  var txt=buildExportText(p);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){closeModal();toast('Copied to clipboard');}).catch(function(){fallbackCopy(txt);});
+  }else{fallbackCopy(txt);}
+}
+
+function fallbackCopy(txt){
+  var ta=document.createElement('textarea');
+  ta.value=txt;ta.style.cssText='position:fixed;opacity:0;top:0;left:0;';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');closeModal();toast('Copied to clipboard');}
+  catch(e){toast('Copy failed — try SMS instead');}
+  document.body.removeChild(ta);
+}
+
+function doExportPDF(){
+  var p=projects.find(function(x){return x.id===currentPid;});if(!p)return;
+  if(typeof window.jspdf==='undefined'&&typeof window.jsPDF==='undefined'){
+    if(!document.getElementById('jspdf-script')){
+      toast('Loading PDF engine...');
+      var s=document.createElement('script');
+      s.id='jspdf-script';
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload=function(){toast('Ready — tap Export PDF again');};
+      s.onerror=function(){toast('PDF unavailable offline. Use Copy or SMS instead.');};
+      document.head.appendChild(s);
+    }else{toast('Still loading — try again in a moment');}
+    return;
+  }
+  closeModal();
+  var jsPDF=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+  var doc=new jsPDF({unit:'pt',format:'letter'});
+  var date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  var m=48,y=m;
+  doc.setFillColor(15,39,68);doc.rect(0,0,612,72,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(255,255,255);doc.text('EVERSTEAD INNOVATIONS',m,38);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(180,196,214);doc.text('Field Count Report',m,54);
+  y=96;doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(15,39,68);doc.text(p.name,m,y);y+=18;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(100,120,140);doc.text('Generated: '+date,m,y);y+=24;
+  doc.setDrawColor(220,228,236);doc.setLineWidth(1);doc.line(m,y,564,y);y+=20;
+  if(!p.items.length){doc.setTextColor(160,170,180);doc.setFontSize(12);doc.text('No items recorded.',m,y);}
+  else{
+    var rh=28;
+    doc.setFillColor(220,230,242);doc.rect(m,y-14,516,rh,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(15,39,68);
+    doc.text('Item',m+10,y+4);doc.text('Count',m+440,y+4);y+=rh;
+    p.items.forEach(function(item,idx){
+      if(idx%2===0){doc.setFillColor(248,250,252);doc.rect(m,y-14,516,rh,'F');}
+      doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(30,40,55);
+      var name=item.name.length>48?item.name.slice(0,45)+'...':item.name;
+      doc.text(name,m+10,y+4);
+      doc.setFont('helvetica','bold');doc.setTextColor(15,39,68);doc.text(String(item.count),m+440,y+4);y+=rh;
+    });
+    y+=16;doc.setDrawColor(220,228,236);doc.line(m,y,564,y);y+=18;
+    doc.setFillColor(15,39,68);doc.rect(m,y-14,516,32,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(255,255,255);
+    doc.text('Total items: '+p.items.length,m+10,y+6);
+    doc.text('Total count: '+p.items.reduce(function(s,i){return s+i.count;},0),m+280,y+6);
+  }
+  doc.save('Everstead_'+p.name.replace(/[^a-z0-9]/gi,'_')+'.pdf');
+  toast('PDF downloaded');
+}
+
+document.getElementById('modal-overlay').addEventListener('click',function(e){
+  if(e.target===document.getElementById('modal-overlay'))closeModal();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'){
+    var inp=document.getElementById('modal-input');
+    if(inp&&document.activeElement===inp)confirmModal();
+  }
+});
+
+var _deferInstall=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();_deferInstall=e;
+  var slot=document.getElementById('install-banner-slot');
+  if(slot){
+    slot.innerHTML='<div class="install-banner"><span style="flex:1">Add Everstead to your home screen for quick access</span><button onclick="triggerInstall()">Add</button><button class="install-banner-close" onclick="this.parentElement.parentElement.innerHTML=\'\'">&#10005;</button></div>';
+  }
+});
+function triggerInstall(){if(_deferInstall){_deferInstall.prompt();}}
+
+load();renderHome();
+</script>
+</body>
+</html>
